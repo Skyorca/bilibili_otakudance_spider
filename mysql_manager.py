@@ -42,7 +42,16 @@ class MySQLManager:
         "PRIMARY KEY(`mid`)"
         ") ENGINE = InnoDB"
     )
-
+    manage_tables["danmaku"] = (
+        "CREATE TABLE danmaku ("
+        "`aid` int(11) NOT NULL,"
+        "`cid` int(11) NOT NULL,"
+        "`content` varchar(10240) NOT NULL DEFAULT '',"
+        "`pubtime` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,"
+        "UNIQUE(`aid`),"
+        "PRIMARY KEY (`aid`)"
+        ") ENGINE= InnoDB"
+    )
 
     def __init__(self, pool_size = 3):
         '''
@@ -62,7 +71,8 @@ class MySQLManager:
                 con.database = self.dbconfig["database"]
                 
         finally: 
-            self.create_tables(cur)   
+            self.create_tables(cur)  
+           #self.create_danmaku(cur)
             cur.close()
             con.close()
         #建立数据库基本信息是单次连接，随后释放掉了，接下来我们要建立一个内部的连接池供其他函数使用
@@ -101,13 +111,13 @@ class MySQLManager:
             cur = con.cursor()
             sql = ("INSERT INTO video (`aid`,`cid`,`mid`,`video_name`,"
                    "`up_name`,`view`,`danmaku`,`reply`, `favorite`,`coin`,`share`,`like`,"
-                   "`history_rank`) VALUES('{}','{}','{}','{}','{}','{}','{}','{}','{}','{}','{}','{}','{}')").format(
+                   "`history_rank`,`pubtime`) VALUES ('{}','{}','{}','{}','{}','{}','{}','{}','{}','{}','{}','{}','{}',from_unixtime('{}'))").format(
                     video_core_info['aid'], video_core_info['cid'], video_core_info['mid'],video_core_info['video_name'],
                     video_core_info['up_name'],video_core_info['view'], video_core_info['danmaku'],video_core_info['reply'],
                     video_core_info['favorite'],video_core_info['coin'],video_core_info['share'],video_core_info['like'],
-                    video_core_info['history_rank']
+                    video_core_info['history_rank'],video_core_info['pubtime']
                    )
-            print(sql)
+           # print(sql)
             cur.execute(sql)
             con.commit()
         except mysql.connector.Error as err:
@@ -131,7 +141,7 @@ class MySQLManager:
                     up_core_info['mid'], up_core_info['up_name'], up_core_info['sex'], 
                     up_core_info['avatar'], up_core_info['sign']
                    )
-            print(sql)
+           # print(sql)
             cur.execute(sql)
             con.commit()
         except mysql.connector.Error as err:
@@ -144,6 +154,33 @@ class MySQLManager:
             cur.close()
             con.close()
     
+
+    def insert_danmaku(self, danmaku_core_info):
+        '''
+        '''
+        try:
+            con = self.con_pool.get_connection()
+            cur = con.cursor()
+            sql = ("INSERT INTO danmaku (`aid`,`cid`,`content`,`pubtime`"
+                   ") VALUES('{}','{}','{}',from_unixtime('{}'))").format(
+                    danmaku_core_info['aid'], danmaku_core_info['cid'],
+                    danmaku_core_info['content'], danmaku_core_info['pubtime']
+                   )
+           # print(sql)
+            cur.execute(sql)
+            con.commit()
+        except mysql.connector.Error as err:
+            #因为可能会反复爬到同一个up的信息，这时不能停下来，只要过滤掉这些错误就好了。但是唯一值一定要指定。
+            if err.errno == errorcode.ER_DUP_UNIQUE or errorcode.ER_DUP_ENTRY: pass
+            else:
+                print("DANMAKU-ERR: ", err)
+                exit(1)
+        finally:
+            cur.close()
+            con.close()
+
+
+
 
     def dump_csv(self):
         '''
@@ -165,8 +202,78 @@ class MySQLManager:
             cur.close()
             con.close()
 
+
+
+ #辅助函数1
+    def insert_video_time(self):
+        '''
+        一开始没在table表里加时间，现在新增一列表示时间，这个函数只要调用一次就够了
+        '''
+        try:
+            con = self.con_pool.get_connection()
+            cur = con.cursor()
+            sql = ("ALTER TABLE video ADD pubtime timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP AFTER history_rank")
+            cur.execute(sql)
+            con.commit()
+        except mysql.connector.Error as err:
+                print(err)
+                exit(1)
+        finally:
+            cur.close()
+            con.close()
+
+    #辅助函数2
+    def get_time_content(self):
+        '''
+        给之前的行增添新列内容pubtime，7k多个
+        '''
+        try:
+            con = self.con_pool.get_connection()
+            cur = con.cursor()
+            sql = ("SELECT aid FROM video")
+            cur.execute(sql)
+            rows = cur.fetchall()
+        except mysql.connector.Error as err:
+                print(err)
+                exit(1)
+        finally:
+            cur.close()
+            con.close()
+        return rows
+
+    #辅助函数3
+    def insert_time_content(self, aid, pubtime):
+        '''
+        '''
+        try:
+            con = self.con_pool.get_connection()
+            cur = con.cursor()
+            sql = ("UPDATE video SET pubtime=from_unixtime({}) WHERE aid={}".format(pubtime,aid))
+            cur.execute(sql)
+            con.commit()
+        except mysql.connector.Error as err:
+                print(err)
+                exit(1)
+        finally:
+            cur.close()
+            con.close()
+
+    #辅助函数4：新增danmaku表
+    def create_danmaku(self, cur):
+        try:
+            cur.execute(self.manage_tables["danmaku"])
+            print("DANMAKU TABLE READY !!!")
+        except mysql.connector.Error as err:
+            print(err)
+
+        
+
 if __name__ == "__main__":
     mgr = MySQLManager(1)
 
 # /usr/local/var/mysql 是mysql存放数据的路径
 # /usr/local/Cellar/mysql/8.0.12/.bottle/etc/my.cnf 配置文件路径 这个修改后放到/private/etc下面才生效（restart mysql.server）
+
+
+
+
