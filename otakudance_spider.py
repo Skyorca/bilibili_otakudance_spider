@@ -92,7 +92,7 @@ class OtakuDanceSpider:
                 递归爬取，对一个av号的爬取会调用其他所有爬取信息的函数
                 '''
                 if len(video_list) == 0 : return  #递归出口
-                if self.video_count % 50 == 0: time.sleep(1.5)
+                if self.video_count % 50 == 0: time.sleep(0.5)
                 depth_todo_list = [] #在爬取时新拿到的av号（每页基本上有20个推荐）
                 for v in video_list:
                         video_url = "https://api.bilibili.com/x/web-interface/view?aid={}".format(v)
@@ -124,6 +124,7 @@ class OtakuDanceSpider:
                                 ###此处插入SQL-up###
                                 self.mysql_manager.insert_up(up_core_info)
                                 ###准备danmaku表的信息###
+                                '''
                                 danmaku_content = self.get_danmaku_content(video_info['data']['cid'])
                                 danmaku_core_info = {}
                                 danmaku_core_info["aid"] = v
@@ -132,6 +133,7 @@ class OtakuDanceSpider:
                                 danmaku_core_info["pubtime"] = video_info['data']['pubdate']
                                 ###此处插入SQL-danmaku###
                                 self.mysql_manager.insert_danmaku(danmaku_core_info)
+                                '''
                                 ###抓取相关推荐的aid### 
                                 depth_todo_in_v = self.get_todo_list(v)
                                 depth_todo_list += depth_todo_in_v   
@@ -161,7 +163,7 @@ class OtakuDanceSpider:
                 爬虫策略：在每轮首先广度搜索填充broad_todo列表，然后交给深度递归爬虫去爬，每轮重复，直到最大页数耗尽。
                 '''
                 max_page_count = self.get_max_page()
-                for page in range(2,max_page_count):
+                for page in range(27,max_page_count):
                         broad_todo_list = []
                         search_otakudance_url = "https://search.bilibili.com/all?keyword=%E5%AE%85%E8%88%9E&from_source=banner_search&page={}".format(page)
                         r = requests.get(url=search_otakudance_url, headers = global_var.headers)
@@ -211,8 +213,8 @@ class OtakuDanceSpider:
 
 if __name__ == "__main__":
     penta = OtakuDanceSpider()
-    penta.broad_and_depth_crawer()
-    #penta.dump_csv()
+    #penta.broad_and_depth_crawer()
+    penta.dump_csv()
   
     
 

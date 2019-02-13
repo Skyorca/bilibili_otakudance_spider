@@ -116,7 +116,7 @@ class MySQLManager:
                     video_core_info['up_name'],video_core_info['view'], video_core_info['danmaku'],video_core_info['reply'],
                     video_core_info['favorite'],video_core_info['coin'],video_core_info['share'],video_core_info['like'],
                     video_core_info['history_rank'],video_core_info['pubtime']
-                   )
+                   )   #这个时间戳的写入方式非常重要！！！
            # print(sql)
             cur.execute(sql)
             con.commit()
@@ -191,10 +191,14 @@ class MySQLManager:
             dump_up = ("SELECT * INTO OUTFILE '/Users/apple/Desktop/up.csv' FIELDS TERMINATED BY ',' ENCLOSED BY '\"' LINES TERMINATED BY '\r\n' FROM (SELECT 'mid','up_name','sex','avatar','sign' UNION SELECT mid, up_name, sex, avatar, sign from up) b")
             cur.execute(dump_up)
             print("DUMP UP COMPLETED!")
-            #dump_video = ("SELECT * INTO OUTFILE '/Users/apple/Desktop/video.csv' FIELDS TERMINATED BY ',' ENCLOSED BY '\"' LINES TERMINATED BY '\r\n' FROM (SELECT 'aid','cid','mid','video_name','up_name','view','danmaku','reply','favorite','coin','share','like','history_rank' UNION SELECT aid, cid, mid, video_name, up_name, view, danmaku, reply, favorite, coin, share, like, history_rank from video) b")
+            ###以下这句话总提示在UNION SELECT前面有语法错误，所以只好手动加标题###
+            #dump_video = ("SELECT * INTO OUTFILE '/Users/apple/Desktop/video.csv' FIELDS TERMINATED BY ',' ENCLOSED BY '\"' LINES TERMINATED BY '\r\n' FROM (SELECT 'aid','cid','mid','video_name','up_name','view','danmaku','reply','favorite','coin','share','like','history_rank','pubtime' UNION SELECT aid, cid, mid, video_name, up_name, view, danmaku, reply, favorite, coin, share, like, history_rank, pubtime from video) b")
             dump_video = ("SELECT * FROM video INTO OUTFILE '/Users/apple/Desktop/video.csv' FIELDS TERMINATED BY ',' ENCLOSED BY '\"' LINES TERMINATED BY '\r\n' ")
             cur.execute(dump_video)
             print("DUMP VIDEO COMPLETED!")
+            dump_danmaku = ("SELECT * INTO OUTFILE '/Users/apple/Desktop/danmaku.csv' FIELDS TERMINATED BY ',' ENCLOSED BY '\"' LINES TERMINATED BY '\r\n' FROM (SELECT 'aid','cid','content','pubtime' UNION SELECT aid,cid,content,pubtime from danmaku) b")
+            cur.execute(dump_danmaku)
+            print("DUMP DANMAKU COMPLETED!")
         except mysql.connector.Error as err:
             print("DUMP-ERR:", err)
             exit(1)
