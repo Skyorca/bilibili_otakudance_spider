@@ -61,6 +61,8 @@ def draw_view_distrib(video):
 
 
 def draw_title_cloud(video):
+    '''
+    '''
     title_ = video.loc[:,"video_name"]
     title = str()
     for idx in range(len(title_)):

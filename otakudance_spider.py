@@ -6,6 +6,7 @@ import html
 import json
 import global_var
 from mysql_manager import MySQLManager
+
 class OtakuDanceSpider:
 
         def __init__(self):
@@ -202,15 +203,6 @@ class OtakuDanceSpider:
                
                 
             
-
-
-
-
-
-
-
-
-
 if __name__ == "__main__":
     penta = OtakuDanceSpider()
     #penta.broad_and_depth_crawer()

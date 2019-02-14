@@ -56,7 +56,7 @@ class MySQLManager:
     def __init__(self, pool_size = 3):
         '''
         初始化数据库：不存在则建立，存在则建立tables
-        '''
+        '''   
         try:
             con = mysql.connector.connect(user = self.dbconfig["user"], password = self.dbconfig["password"])
         except mysql.connector.Error as err:    #要是连接server出错就没有办法了
